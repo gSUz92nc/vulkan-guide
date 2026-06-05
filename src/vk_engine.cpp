@@ -140,6 +140,7 @@ void VulkanEngine::draw_background(VkCommandBuffer cmd) {
 	// Make a clear/colour frame based off the current frame number
 	VkClearColorValue clearValue;
 	float flash = std::abs(std::sin(_frameNumber / 120.f));
+	clearValue = { { 0.0f, flash, 0.0f, 1.0f } };
 
 	VkImageSubresourceRange clearRange = vkinit::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT);
 
