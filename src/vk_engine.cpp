@@ -55,15 +55,9 @@ void VulkanEngine::init()
 void VulkanEngine::draw()
 {
 	// Wait for the gpu to finish the last frame (time out of 1 second)
-	//VK_CHECK(vkWaitForFences(_device, 1, &get_current_frame()._renderFence, true, 1000000000));  // Uses nanoseconds
-	//// You have to reset a fence after using it
-	//VK_CHECK(vkResetFences(_device, 1, &get_current_frame()._renderFence));
-
-	// TODO: check why rwr0ong
-
-	VK_CHECK(vkWaitForFences(_device, 1, &get_current_frame()._renderFence, true, 1000000000));
+	VK_CHECK(vkWaitForFences(_device, 1, &get_current_frame()._renderFence, true, 1000000000));  // Uses nanoseconds
+	// You have to reset a fence after using it
 	VK_CHECK(vkResetFences(_device, 1, &get_current_frame()._renderFence));
-
 
 	// Request the image index from the swapchain
 	uint32_t swapchainImageIndex;
@@ -86,7 +80,7 @@ void VulkanEngine::draw()
 	VkClearColorValue clearValue;
 	float flash = std::abs(std::sin(_frameNumber / 120.f));
 
-	clearValue = { { 0.0f, 0.0f, flash, 1.0f } };
+	clearValue = { { flash , 0, 0, 1.0f } };
 
 	VkImageSubresourceRange clearRange = vkinit::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT);
 
@@ -127,13 +121,7 @@ void VulkanEngine::draw()
 
 	_frameNumber++;
 
-	for (int i = 0; i < FRAME_OVERLAP; i++) {
-		vkDestroyCommandPool(_device, get_current_frame()._commandPool, nullptr);
 
-		vkDestroyFence(_device, _frames[i]._renderFence, nullptr);
-		vkDestroySemaphore(_device, _frames[i]._renderSemaphore, nullptr);
-		vkDestroySemaphore(_device, _frames[i]._swapchainSemaphore, nullptr);
-	}
 
 }
 
@@ -252,9 +240,6 @@ void VulkanEngine::init_vulkan() {
 	// This creates the queue that will be used for all commands
 	_graphicsQueue = vkbDevice.get_queue(vkb::QueueType::graphics).value();
 	_graphicsQueueFamily = vkbDevice.get_queue_index(vkb::QueueType::graphics).value();
-
-	// TODO: MISTYPED THIS
-
 }
 
 void VulkanEngine::init_commands()
@@ -329,6 +314,13 @@ void VulkanEngine::destroy_swapchain() {
 void VulkanEngine::cleanup()
 {
 	if (_isInitialized) {
+		for (int i = 0; i < FRAME_OVERLAP; i++) {
+			vkDestroyCommandPool(_device, get_current_frame()._commandPool, nullptr);
+
+			vkDestroyFence(_device, _frames[i]._renderFence, nullptr);
+			vkDestroySemaphore(_device, _frames[i]._renderSemaphore, nullptr);
+			vkDestroySemaphore(_device, _frames[i]._swapchainSemaphore, nullptr);
+		}
 
 		vkDeviceWaitIdle(_device);
 
