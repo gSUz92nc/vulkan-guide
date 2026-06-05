@@ -1,6 +1,9 @@
 ﻿//> includes
 #include "vk_engine.h"
 
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
+
 #include <SDL.h>
 #include <SDL_vulkan.h>
 
@@ -18,6 +21,8 @@ VulkanEngine* loadedEngine = nullptr;
 VulkanEngine& VulkanEngine::Get() { return *loadedEngine; }
 
 constexpr bool bUseValidationLayers{ true };
+
+
 
 void VulkanEngine::init()
 {
@@ -51,46 +56,53 @@ void VulkanEngine::init()
 
 }
 
-
 void VulkanEngine::draw()
 {
+	// POSSIBLY UNNEEDED
+
 	// Wait for the gpu to finish the last frame (time out of 1 second)
 	VK_CHECK(vkWaitForFences(_device, 1, &get_current_frame()._renderFence, true, 1000000000));  // Uses nanoseconds
-	// You have to reset a fence after using it
-	VK_CHECK(vkResetFences(_device, 1, &get_current_frame()._renderFence));
+
+	// We know the GPU has finished execution, from the fence, so we can safely delete
+	// The data used for that specific frame
+	get_current_frame()._deletionQueue.flush();
 
 	// Request the image index from the swapchain
 	uint32_t swapchainImageIndex;
 	VK_CHECK(vkAcquireNextImageKHR(_device, _swapchain, 1000000000, get_current_frame()._swapchainSemaphore, nullptr, &swapchainImageIndex));
 
+	// You have to reset a fence after using it
+	VK_CHECK(vkResetFences(_device, 1, &get_current_frame()._renderFence));
+
+	// We are sure the command has finished executing, got this from the fence, so we can safely reset the buffer
+	VK_CHECK(vkResetCommandBuffer(get_current_frame()._mainCommandBuffer, 0));
+
 	// Only used for shorter names, mainCommandBuffer is a pointer to vulkan internals not handled by us.
 	VkCommandBuffer cmd = get_current_frame()._mainCommandBuffer;
 
-	// We are sure the command has finished executing, got this from the fence, so we can safely reset the buffer
-	VK_CHECK(vkResetCommandBuffer(cmd, 0));
-
-	// Begin the command buffer recording, we will use this command buffer once so we pass a signal bit to let vulkan know
-	// Passing the bit lets the drivers slightly optimise the operations
 	VkCommandBufferBeginInfo cmdBeginInfo = vkinit::command_buffer_begin_info(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+	_drawExtent.width = _drawImage.imageExtent.width;
+	_drawExtent.height = _drawImage.imageExtent.height;
 
 	VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
 
-	vkutil::transition_image(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+	// Transition our main draw image into the general layout so we can write into it
+	// We will overwrite it all so we dont care about whatever was in the older layout
+	vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-	VkClearColorValue clearValue;
-	float flash = std::abs(std::sin(_frameNumber / 120.f));
+	draw_background(cmd);
 
-	clearValue = { { flash , 0, 0, 1.0f } };
+	// Change the image and swapchain images into  formats ready for transport
+	vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	vkutil::transition_image(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-	VkImageSubresourceRange clearRange = vkinit::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT);
+	// Execute a copy from the draw image into the swapchain
+	vkutil::copy_image_to_image(cmd, _drawImage.image, _swapchainImages[swapchainImageIndex], _drawExtent, _swapchainExtent);
 
-	// Clear the image
-	vkCmdClearColorImage(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
+	// Set the swapchain image layout to present so we can show it on the screen
+	vkutil::transition_image(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-	// Make the swapchain image into a presentable image
-	vkutil::transition_image(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
-	// Finalise the command buffer to be sent off
 	VK_CHECK(vkEndCommandBuffer(cmd));
 
 	// Prepare the submission to queue
@@ -101,12 +113,14 @@ void VulkanEngine::draw()
 	VkSemaphoreSubmitInfo waitInfo = vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, get_current_frame()._swapchainSemaphore);
 	VkSemaphoreSubmitInfo signalInfo = vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, get_current_frame()._renderSemaphore);
 
-
 	// TODO: ADD MORE COMMENTS
 	VkSubmitInfo2 submit = vkinit::submit_info(&cmdInfo, &signalInfo, &waitInfo);
 
+	// Submit the command buffer the the queue and execute it
+	// _renderFence will block until the graphic commands finish executing
 	VK_CHECK(vkQueueSubmit2(_graphicsQueue, 1, &submit, get_current_frame()._renderFence));
 
+	// Prepare to present the image we just rendered
 	VkPresentInfoKHR presentInfo = { .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR, .pNext = nullptr };
 
 	presentInfo.pSwapchains = &_swapchain;
@@ -120,26 +134,17 @@ void VulkanEngine::draw()
 	VK_CHECK(vkQueuePresentKHR(_graphicsQueue, &presentInfo));
 
 	_frameNumber++;
-
-
-
 }
 
-//void VulkanEngine::handle_input() {
-//
-//	const static Uint8* keyStates = SDL_GetKeyboardState(NULL);
-//	bool keyPressedThisFrame = false;
-//
-//	// Test get continuous keyboard input
-//	fmt::print("Key Pressed: ");
-//
-//	if (keyStates[SDL_SCANCODE_W]) {
-//		fmt::print("W ");
-//		keyPressedThisFrame = true;
-//	}
-//
-//	fmt::print("\n");
-//}
+void VulkanEngine::draw_background(VkCommandBuffer cmd) {
+	// Make a clear/colour frame based off the current frame number
+	VkClearColorValue clearValue;
+	float flash = std::abs(std::sin(_frameNumber / 120.f));
+
+	VkImageSubresourceRange clearRange = vkinit::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT);
+
+	vkCmdClearColorImage(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
+}
 
 void VulkanEngine::run()
 {
@@ -177,8 +182,6 @@ void VulkanEngine::run()
 		draw();
 	}
 }
-
-
 
 void VulkanEngine::init_vulkan() {
 
@@ -240,6 +243,20 @@ void VulkanEngine::init_vulkan() {
 	// This creates the queue that will be used for all commands
 	_graphicsQueue = vkbDevice.get_queue(vkb::QueueType::graphics).value();
 	_graphicsQueueFamily = vkbDevice.get_queue_index(vkb::QueueType::graphics).value();
+
+	// Initialise the memory allocator
+	VmaAllocatorCreateInfo allocatorInfo{};
+	allocatorInfo.physicalDevice = _chosenGPU;
+	allocatorInfo.device = _device;
+	allocatorInfo.instance = _instance;
+	allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+	vmaCreateAllocator(&allocatorInfo, &_allocator);
+
+	// Make sure we destroy the allocator when we finish execution
+	_mainDeletionQueue.push_function([&]() {
+		vmaDestroyAllocator(_allocator);
+		});
+
 }
 
 void VulkanEngine::init_commands()
@@ -299,6 +316,51 @@ void VulkanEngine::create_swapchain(uint32_t width, uint32_t height) {
 void VulkanEngine::init_swapchain() {
 	// This init is seperate from just creating the swapchain, we need to recreate the swapchain whenever the window resizes or moves
 	create_swapchain(_windowExtent.width, _windowExtent.height);
+
+	// Draw size will match the window
+	VkExtent3D drawImageExtent = {
+		_windowExtent.width,
+		_windowExtent.height,
+		1
+	};
+
+	// Hardcoding the draw format to the 32 bit float
+	_drawImage.imageFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
+	_drawImage.imageExtent = drawImageExtent;
+
+	// Tell Vulkan what we intend to do with this image
+	VkImageUsageFlags drawImageUsages =
+		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | // Can copy from the image
+		VK_IMAGE_USAGE_TRANSFER_DST_BIT | // Can copy to the image
+		VK_IMAGE_USAGE_STORAGE_BIT | //The compute shader can write to the image
+		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // Graphics pipeline an draw geometry to it
+
+	VkImageCreateInfo rimg_info = vkinit::image_create_info(_drawImage.imageFormat, drawImageUsages, drawImageExtent);
+
+	// The the draw image we want to allocate it from the gpu local memory
+	VmaAllocationCreateInfo rimg_allocinfo = {};
+	rimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+	rimg_allocinfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	// Allocate and create the image
+	vmaCreateImage(_allocator, &rimg_info, &rimg_allocinfo, &_drawImage.image, &_drawImage.allocation, nullptr);
+
+	// Image views are thin wrappers that you need to access images
+	VkImageViewCreateInfo rview_info = vkinit::imageview_create_info(_drawImage.imageFormat, _drawImage.image, VK_IMAGE_ASPECT_COLOR_BIT);
+
+	VK_CHECK(vkCreateImageView(_device, &rview_info, nullptr, &_drawImage.imageView));
+
+	// Add the deletion queues
+	_mainDeletionQueue.push_function([=]() {
+		vkDestroyImageView(_device, _drawImage.imageView, nullptr);
+		vmaDestroyImage(_allocator, _drawImage.image, _drawImage.allocation);
+	});
+
+	
+
+
+
+
 }
 
 void VulkanEngine::destroy_swapchain() {
@@ -314,15 +376,23 @@ void VulkanEngine::destroy_swapchain() {
 void VulkanEngine::cleanup()
 {
 	if (_isInitialized) {
+
+		// Wait for the GPU to finish before we start deleting anything
+		vkDeviceWaitIdle(_device);
+
+		// Delete all frame specific data
 		for (int i = 0; i < FRAME_OVERLAP; i++) {
 			vkDestroyCommandPool(_device, get_current_frame()._commandPool, nullptr);
 
 			vkDestroyFence(_device, _frames[i]._renderFence, nullptr);
 			vkDestroySemaphore(_device, _frames[i]._renderSemaphore, nullptr);
 			vkDestroySemaphore(_device, _frames[i]._swapchainSemaphore, nullptr);
+
+			_frames[i]._deletionQueue.flush();
 		}
 
-		vkDeviceWaitIdle(_device);
+		// Delete the global queue.
+		_mainDeletionQueue.flush();
 
 		for (int i = 0; i < FRAME_OVERLAP; i++) {
 			vkDestroyCommandPool(_device, _frames[i]._commandPool, nullptr);

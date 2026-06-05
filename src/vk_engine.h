@@ -5,6 +5,25 @@
 
 #include <vk_types.h>
 
+// Note: This implementation is inefficient at scale since we are storing whole 
+// std::functions for every object we are deleting. Better implementations would store
+// an array of vulkan handles of various types such as VkImage, VkBuffer, etc.
+// https://vkguide.dev/docs/new_chapter_2/vulkan_new_rendering/
+struct DeletionQueue {
+	std::deque<std::function<void()>> deletors;
+
+	// Push the function that handles deleting the 
+	void push_function(std::function<void()>&& function) {
+		deletors.push_back(function);
+	}
+
+	void flush() {
+		for (auto it = deletors.rbegin(); it != deletors.rend(); it++) {
+			(*it)(); // Call each function in the deletors
+		}
+	}
+};
+
 
 struct FrameData {
 	VkCommandPool _commandPool;
@@ -15,6 +34,8 @@ struct FrameData {
 	VkSemaphore _renderSemaphore; // This is used for presenting the image to the OS 
 	// Fences are used for preventing work from being run on the GPU before another task as finished
 	VkFence _renderFence; // This lets us wait for the draw commands of a given frame to finish
+
+	DeletionQueue _deletionQueue;
 };
 
 constexpr unsigned int FRAME_OVERLAP = 2; // This is set to two for doubl-buffering
@@ -42,10 +63,18 @@ public:
 	FrameData _frames[FRAME_OVERLAP];
 	FrameData& get_current_frame() { return _frames[_frameNumber % FRAME_OVERLAP]; };
 
+	// Draw resources
+	AllocatedImage _drawImage;
+	VkExtent2D _drawExtent;
+
+	DeletionQueue _mainDeletionQueue;
+
 	VkQueue _graphicsQueue;
 	uint32_t _graphicsQueueFamily;
 
 	VkExtent2D _swapchainExtent;
+
+	VmaAllocator _allocator;
 
 	struct SDL_Window* _window{ nullptr };
 
@@ -72,6 +101,8 @@ private:
 	void init_commands();
 
 	void init_sync_structures();
+
+	void draw_background(VkCommandBuffer cmd);
 
 	void create_swapchain(uint32_t width, uint32_t height);
 
