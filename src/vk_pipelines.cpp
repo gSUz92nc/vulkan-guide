@@ -34,7 +34,7 @@ bool vkutil::load_shader_module(const char* filePath,
 	};
 
 	VkShaderModule shaderModule{};
-	if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule)) {
+	if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
 		return false;
 	}
 
