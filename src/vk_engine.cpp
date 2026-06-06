@@ -356,6 +356,10 @@ void VulkanEngine::init_descriptors() {
 	
 }
 
+void VulkanEngine::init_pipelines() {
+	init_background_pipelines();
+}
+
 void VulkanEngine::init_background_pipelines() {
 
 
