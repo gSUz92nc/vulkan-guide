@@ -28,7 +28,6 @@ struct DeletionQueue {
 	}
 };
 
-
 struct FrameData {
 	VkCommandPool _commandPool{};
 	VkCommandBuffer _mainCommandBuffer{};
@@ -46,6 +45,22 @@ struct FrameData {
 	VkFence _renderFence{}; // This lets us wait for the draw commands of a given frame to finish
 
 	DeletionQueue _deletionQueue{};
+};
+
+struct ComputePushConstants {
+	glm::vec4 data1;
+	glm::vec4 data2;
+	glm::vec4 data3;
+	glm::vec4 data4;
+};
+
+struct ComputeEffect {
+	const std::string name{};
+
+	VkPipeline pipeline;
+	VkPipelineLayout layout;
+
+	ComputePushConstants data;
 };
 
 constexpr unsigned int FRAME_OVERLAP = 2; // This is set to two for doubl-buffering
