@@ -5,6 +5,9 @@
 
 #include <vk_types.h>
 #include <vk_descriptors.h>
+#include <imgui.h>
+#include <imgui_impl_sdl2.h>
+#include <imgui_impl_vulkan.h>
 
 // Note: This implementation is inefficient at scale since we are storing whole 
 // std::functions for every object we are deleting. Better implementations would store
@@ -49,6 +52,10 @@ constexpr unsigned int FRAME_OVERLAP = 2; // This is set to two for doubl-buffer
 
 class VulkanEngine {
 public:
+
+	VkFence _immFence{};
+	VkCommandBuffer _immCommandBuffer{};
+	VkCommandPool _immCommandPool{};
 
 	bool _isInitialized{ false };
 	int _frameNumber {0};
@@ -95,6 +102,10 @@ public:
 
 	static VulkanEngine& Get();
 
+
+	// Used for sending commands to the GPU independant of the swapchain or rendering logic
+	void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);
+
 	//initializes everything in the engine
 	void init();
 
@@ -122,6 +133,10 @@ private:
 	void init_pipelines();
 
 	void init_background_pipelines();
+
+	void init_imgui();
+
+	void draw_imgui(VkCommandBuffer cmd, VkImageView targetImageView);
 
 	void draw_background(VkCommandBuffer cmd);
 

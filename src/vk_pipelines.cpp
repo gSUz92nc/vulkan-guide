@@ -16,8 +16,10 @@ bool vkutil::load_shader_module(const char* filePath,
 	// which gives the file size in bytes
 	size_t fileSize = static_cast<size_t>(file.tellg());
 
+	fmt::println("File size: {}", fileSize);
+
 	// SPIR-V expects the buffer to be in uint32_t so we reserve a vec with enough space for file
-	std::vector<uint32_t> buffer{ static_cast<uint32_t>(fileSize / sizeof(uint32_t)) };
+	std::vector<uint32_t> buffer(static_cast<uint32_t>(fileSize / sizeof(uint32_t)));
 
 	file.seekg(0); // Move cursor to the start
 
@@ -26,7 +28,7 @@ bool vkutil::load_shader_module(const char* filePath,
 
 	file.close();
 
-	VkShaderModuleCreateInfo createInfo{
+	VkShaderModuleCreateInfo createInfo = {
 		.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
 		.pNext = nullptr,
 		.codeSize = buffer.size() * sizeof(uint32_t),
