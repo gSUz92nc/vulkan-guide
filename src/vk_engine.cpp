@@ -154,7 +154,7 @@ void VulkanEngine::draw()
 
 void VulkanEngine::draw_background(VkCommandBuffer cmd) {
 
-	ComputeEffect effect = backgroundEffects[currentBackgroundEffectIndex];
+	const ComputeEffect& effect = backgroundEffects[currentBackgroundEffectIndex];
 
 
 	// Bind the gradient drawing compute pipeline
