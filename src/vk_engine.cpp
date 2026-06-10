@@ -101,8 +101,12 @@ void VulkanEngine::draw()
 
 	draw_background(cmd);
 
+	vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
+
+	draw_geometry(cmd);
+
 	// Change the image and swapchain images into  formats ready for transport
-	vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 	vkutil::transition_image(cmd, _swapchainImages[swapchainImageIndex], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 	// Execute a copy from the draw image into the swapchain
@@ -129,7 +133,6 @@ void VulkanEngine::draw()
 	VkSemaphoreSubmitInfo waitInfo = vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, get_current_frame()._swapchainSemaphore);
 	VkSemaphoreSubmitInfo signalInfo = vkinit::semaphore_submit_info(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, get_current_frame()._renderSemaphore);
 
-	// TODO: ADD MORE COMMENTS
 	VkSubmitInfo2 submit = vkinit::submit_info(&cmdInfo, &signalInfo, &waitInfo);
 	
 	// Submit the command buffer the the queue and execute it
@@ -170,6 +173,48 @@ void VulkanEngine::draw_background(VkCommandBuffer cmd) {
 	// Execute the pipeline dispatch using a 16x16 workgroup size
 	vkCmdDispatch(cmd, std::ceil(_drawExtent.width / 16.0), std::ceil(_drawExtent.height / 16.0), 1);
 
+}
+
+void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
+	// Begin a render pass connected to our draw image
+	VkRenderingAttachmentInfo colorAttachment{ 
+		vkinit::attachment_info(_drawImage.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) 
+	};
+
+	VkRenderingInfo renderInfo{ vkinit::rendering_info(_drawExtent, &colorAttachment, nullptr)};
+	vkCmdBeginRendering(cmd, &renderInfo);
+
+	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_trianglePipeline);
+
+	// Set the dynamic viewport and scissor
+	VkViewport viewport{
+		.x = 0,
+		.y = 0,
+		.width = static_cast<float>(_drawExtent.width),
+		.height = static_cast<float>(_drawExtent.height),
+		.minDepth = 0.f,
+		.maxDepth = 1.f
+	};
+
+	vkCmdSetViewport(cmd, 0, 1, &viewport);
+
+	VkRect2D scissor{
+		.offset = {
+			.x = 0,
+			.y = 0
+		},
+		.extent = {
+			.width = _drawExtent.width,
+			.height = _drawExtent.height
+		}
+	};
+
+	vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+	// Launch a draw command to draw the 3 vertices
+	vkCmdDraw(cmd, 3, 1, 0, 0);
+
+	vkCmdEndRendering(cmd);
 }
 
 void VulkanEngine::draw_imgui(VkCommandBuffer cmd, VkImageView target) {
@@ -470,10 +515,6 @@ void VulkanEngine::init_pipelines() {
 	VK_CHECK(vkCreatePipelineLayout(_device, 
 		&computeLayout, nullptr, &_gradientPipelineLayout));
 
-
-	// TODO: remove
-	//init_background_pipelines();
-
 	VkShaderModule gradientShader{};
 	if (!vkutil::load_shader_module("../shaders/gradient_color.comp.spv", _device, &gradientShader)) {
 		fmt::println("Error when building the compute shader");
@@ -519,7 +560,7 @@ void VulkanEngine::init_pipelines() {
 
 	VK_CHECK(vkCreateComputePipelines(_device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &sky.pipeline));
 
-	// Save the effects
+	//// Save the effects
 	backgroundEffects.push_back(gradient);
 	backgroundEffects.push_back(sky);
 
@@ -531,6 +572,8 @@ void VulkanEngine::init_pipelines() {
 		vkDestroyPipeline(_device, gradient.pipeline, nullptr);
 		vkDestroyPipeline(_device, sky.pipeline, nullptr);
 	});
+
+	init_triangle_pipelines();
 }
 
 void VulkanEngine::init_background_pipelines() {
@@ -578,6 +621,64 @@ void VulkanEngine::init_background_pipelines() {
 		vkDestroyPipeline(_device, _gradientPipeline, nullptr);
 	});
 }
+
+void VulkanEngine::init_triangle_pipelines() {
+	VkShaderModule triangleFragShader{};
+	if (!vkutil::load_shader_module("../shaders/colored_triangle.frag.spv", _device, &triangleFragShader)) {
+		fmt::println("Error when building the triangle fragment shader module");
+	} else {
+		fmt::println("Successfully loaded the triangle fragment shader module");
+	}
+
+	VkShaderModule triangleVertexShader{};
+	if (!vkutil::load_shader_module("../shaders/colored_triangle.vert.spv", _device, &triangleVertexShader) != VK_SUCCESS) {
+		fmt::println("Error when building the triangle vertex shader module");
+	} else {
+		fmt::println("Successfully loaded the triangle vertex shader module");
+	}
+
+	// Create the pipeline layout
+	VkPipelineLayoutCreateInfo pipelineLayoutInfo{
+		vkinit::pipeline_layout_create_info()
+	};
+	VK_CHECK(vkCreatePipelineLayout(_device, &pipelineLayoutInfo, nullptr, &m_trianglePipelineLayout));
+
+	// Create the pipeline
+	PipelineBuilder pipelineBuilder{};
+
+	// Use the triangle layout we just created
+	pipelineBuilder.set_pipeline_layout(m_trianglePipelineLayout);
+	// Connect the vertex and pixel shaders to the pipeline
+	pipelineBuilder.set_shaders(triangleVertexShader, triangleFragShader);
+	// Set it to draw triangles
+	pipelineBuilder.set_input_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	// Fill the triangles
+	pipelineBuilder.set_polygon_mode(VK_POLYGON_MODE_FILL);
+	// No backface culling
+	pipelineBuilder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+	// No multisampling
+	pipelineBuilder.set_mulitsampling_none();
+	// No blending
+	pipelineBuilder.disable_blending();
+	// No depth testing
+	pipelineBuilder.disable_depthtest();
+
+	// Connect the image format we will draw into from draw image
+	pipelineBuilder.set_color_attachment(_drawImage.imageFormat);
+	pipelineBuilder.set_depth_format(VK_FORMAT_UNDEFINED);
+
+	// Build the pipeline
+	m_trianglePipeline = pipelineBuilder.build_pipeline(_device);
+
+	// Clean our structures
+	vkDestroyShaderModule(_device, triangleFragShader, nullptr);
+	vkDestroyShaderModule(_device, triangleVertexShader, nullptr);
+
+	_mainDeletionQueue.push_function([&]() {
+		vkDestroyPipelineLayout(_device, m_trianglePipelineLayout, nullptr);
+		vkDestroyPipeline(_device, m_trianglePipeline, nullptr);
+	});
+}	
 
 void VulkanEngine::init_imgui() {
 	// Create the descriptor pool for imgui

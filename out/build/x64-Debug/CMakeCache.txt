@@ -361,13 +361,13 @@ FMT_WERROR:BOOL=OFF
 GIT_EXECUTABLE:FILEPATH=C:/Program Files/Git/cmd/git.exe
 
 //Path to a program.
-GLSL_VALIDATOR:FILEPATH=C:/VulkanSDK/1.4.350.0/Bin/glslangValidator.exe
+GLSLC:FILEPATH=C:/VulkanSDK/1.4.350.0/Bin/glslc.exe
 
 //Arguments to supply to pkg-config
 PKG_CONFIG_ARGN:STRING=
 
 //pkg-config executable
-PKG_CONFIG_EXECUTABLE:FILEPATH=C:/msys64/ucrt64/bin/pkg-config.exe
+PKG_CONFIG_EXECUTABLE:FILEPATH=PKG_CONFIG_EXECUTABLE-NOTFOUND
 
 //Dependencies for the target
 SDL2-static_LIB_DEPENDS:STATIC=general;kernel32;general;user32;general;gdi32;general;winmm;general;imm32;general;ole32;general;oleaut32;general;version;general;uuid;general;advapi32;general;setupapi;general;shell32;general;dinput8;
@@ -652,7 +652,7 @@ Vulkan_INCLUDE_DIR:PATH=C:/VulkanSDK/1.4.350.0/Include
 Vulkan_LIBRARY:FILEPATH=C:/VulkanSDK/1.4.350.0/Lib/vulkan-1.lib
 
 //Path to a program.
-WINDRES:FILEPATH=C:/msys64/ucrt64/bin/windres.exe
+WINDRES:FILEPATH=C:/msys64/usr/bin/windres.exe
 
 //Value Computed by CMake
 fastgltf_BINARY_DIR:STATIC=D:/Github/vulkan-guide-starting-point-2/out/build/x64-Debug/third_party/fastgltf
@@ -861,8 +861,6 @@ CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
 //Details about finding Git
 FIND_PACKAGE_MESSAGE_DETAILS_Git:INTERNAL=[C:/Program Files/Git/cmd/git.exe][v2.43.0.windows.1()]
-//Details about finding PkgConfig
-FIND_PACKAGE_MESSAGE_DETAILS_PkgConfig:INTERNAL=[C:/msys64/ucrt64/bin/pkg-config.exe][v2.5.1()]
 //Details about finding Vulkan
 FIND_PACKAGE_MESSAGE_DETAILS_Vulkan:INTERNAL=[C:/VulkanSDK/1.4.350.0/Lib/vulkan-1.lib][C:/VulkanSDK/1.4.350.0/Include][cfound components: glslc glslangValidator ][v1.4.350()]
 //ADVANCED property for variable: GIT_EXECUTABLE

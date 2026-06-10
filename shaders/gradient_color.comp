@@ -29,4 +29,3 @@ void main()
         imageStore(image, texelCoord, mix(topColor,bottomColor, blend));
     }
 }
-

@@ -44,7 +44,7 @@ cmake_ninja_workdir = D$:\Github\vulkan-guide-starting-point-2\out\build\x64-Deb
 #############################################
 # Utility command for Shaders
 
-build Shaders: phony CMakeFiles\Shaders D$:\Github\vulkan-guide-starting-point-2\shaders\gradient.comp.spv D$:\Github\vulkan-guide-starting-point-2\shaders\gradient_color.comp.spv D$:\Github\vulkan-guide-starting-point-2\shaders\sky.comp.spv
+build Shaders: phony CMakeFiles\Shaders D$:\Github\vulkan-guide-starting-point-2\shaders\colored_triangle.frag.spv D$:\Github\vulkan-guide-starting-point-2\shaders\colored_triangle.vert.spv D$:\Github\vulkan-guide-starting-point-2\shaders\gradient_color.comp.spv D$:\Github\vulkan-guide-starting-point-2\shaders\sky.comp.spv
 
 
 #############################################
@@ -103,15 +103,24 @@ build install\local: phony CMakeFiles\install\local.util
 #############################################
 # Phony custom command for CMakeFiles\Shaders
 
-build CMakeFiles\Shaders | ${cmake_ninja_workdir}CMakeFiles\Shaders: phony D$:\Github\vulkan-guide-starting-point-2\shaders\gradient.comp.spv D$:\Github\vulkan-guide-starting-point-2\shaders\gradient_color.comp.spv D$:\Github\vulkan-guide-starting-point-2\shaders\sky.comp.spv
+build CMakeFiles\Shaders | ${cmake_ninja_workdir}CMakeFiles\Shaders: phony D$:\Github\vulkan-guide-starting-point-2\shaders\colored_triangle.frag.spv D$:\Github\vulkan-guide-starting-point-2\shaders\colored_triangle.vert.spv D$:\Github\vulkan-guide-starting-point-2\shaders\gradient_color.comp.spv D$:\Github\vulkan-guide-starting-point-2\shaders\sky.comp.spv
 
 
 #############################################
-# Custom command for D:\Github\vulkan-guide-starting-point-2\shaders\gradient.comp.spv
+# Custom command for D:\Github\vulkan-guide-starting-point-2\shaders\colored_triangle.frag.spv
 
-build D$:\Github\vulkan-guide-starting-point-2\shaders\gradient.comp.spv: CUSTOM_COMMAND D$:\Github\vulkan-guide-starting-point-2\shaders\gradient.comp
-  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D D:\Github\vulkan-guide-starting-point-2\out\build\x64-Debug && C:\VulkanSDK\1.4.350.0\Bin\glslangValidator.exe -V D:/Github/vulkan-guide-starting-point-2/shaders/gradient.comp -o D:/Github/vulkan-guide-starting-point-2/shaders/gradient.comp.spv"
-  DESC = Generating D:/Github/vulkan-guide-starting-point-2/shaders/gradient.comp.spv
+build D$:\Github\vulkan-guide-starting-point-2\shaders\colored_triangle.frag.spv: CUSTOM_COMMAND D$:\Github\vulkan-guide-starting-point-2\shaders\colored_triangle.frag
+  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D D:\Github\vulkan-guide-starting-point-2\out\build\x64-Debug && C:\VulkanSDK\1.4.350.0\Bin\glslc.exe D:/Github/vulkan-guide-starting-point-2/shaders/colored_triangle.frag -o D:/Github/vulkan-guide-starting-point-2/shaders/colored_triangle.frag.spv"
+  DESC = Generating D:/Github/vulkan-guide-starting-point-2/shaders/colored_triangle.frag.spv
+  restat = 1
+
+
+#############################################
+# Custom command for D:\Github\vulkan-guide-starting-point-2\shaders\colored_triangle.vert.spv
+
+build D$:\Github\vulkan-guide-starting-point-2\shaders\colored_triangle.vert.spv: CUSTOM_COMMAND D$:\Github\vulkan-guide-starting-point-2\shaders\colored_triangle.vert
+  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D D:\Github\vulkan-guide-starting-point-2\out\build\x64-Debug && C:\VulkanSDK\1.4.350.0\Bin\glslc.exe D:/Github/vulkan-guide-starting-point-2/shaders/colored_triangle.vert -o D:/Github/vulkan-guide-starting-point-2/shaders/colored_triangle.vert.spv"
+  DESC = Generating D:/Github/vulkan-guide-starting-point-2/shaders/colored_triangle.vert.spv
   restat = 1
 
 
@@ -119,7 +128,7 @@ build D$:\Github\vulkan-guide-starting-point-2\shaders\gradient.comp.spv: CUSTOM
 # Custom command for D:\Github\vulkan-guide-starting-point-2\shaders\gradient_color.comp.spv
 
 build D$:\Github\vulkan-guide-starting-point-2\shaders\gradient_color.comp.spv: CUSTOM_COMMAND D$:\Github\vulkan-guide-starting-point-2\shaders\gradient_color.comp
-  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D D:\Github\vulkan-guide-starting-point-2\out\build\x64-Debug && C:\VulkanSDK\1.4.350.0\Bin\glslangValidator.exe -V D:/Github/vulkan-guide-starting-point-2/shaders/gradient_color.comp -o D:/Github/vulkan-guide-starting-point-2/shaders/gradient_color.comp.spv"
+  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D D:\Github\vulkan-guide-starting-point-2\out\build\x64-Debug && C:\VulkanSDK\1.4.350.0\Bin\glslc.exe D:/Github/vulkan-guide-starting-point-2/shaders/gradient_color.comp -o D:/Github/vulkan-guide-starting-point-2/shaders/gradient_color.comp.spv"
   DESC = Generating D:/Github/vulkan-guide-starting-point-2/shaders/gradient_color.comp.spv
   restat = 1
 
@@ -128,7 +137,7 @@ build D$:\Github\vulkan-guide-starting-point-2\shaders\gradient_color.comp.spv: 
 # Custom command for D:\Github\vulkan-guide-starting-point-2\shaders\sky.comp.spv
 
 build D$:\Github\vulkan-guide-starting-point-2\shaders\sky.comp.spv: CUSTOM_COMMAND D$:\Github\vulkan-guide-starting-point-2\shaders\sky.comp
-  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D D:\Github\vulkan-guide-starting-point-2\out\build\x64-Debug && C:\VulkanSDK\1.4.350.0\Bin\glslangValidator.exe -V D:/Github/vulkan-guide-starting-point-2/shaders/sky.comp -o D:/Github/vulkan-guide-starting-point-2/shaders/sky.comp.spv"
+  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D D:\Github\vulkan-guide-starting-point-2\out\build\x64-Debug && C:\VulkanSDK\1.4.350.0\Bin\glslc.exe D:/Github/vulkan-guide-starting-point-2/shaders/sky.comp -o D:/Github/vulkan-guide-starting-point-2/shaders/sky.comp.spv"
   DESC = Generating D:/Github/vulkan-guide-starting-point-2/shaders/sky.comp.spv
   restat = 1
 
@@ -5050,7 +5059,7 @@ build third_party\SDL\CMakeFiles\uninstall | ${cmake_ninja_workdir}third_party\S
 #############################################
 # Order-only phony target for engine
 
-build cmake_object_order_depends_target_engine: phony || cmake_object_order_depends_target_SDL2 cmake_object_order_depends_target_fastgltf cmake_object_order_depends_target_fastgltf_simdjson cmake_object_order_depends_target_fmt cmake_object_order_depends_target_imgui cmake_object_order_depends_target_vkbootstrap
+build cmake_object_order_depends_target_engine: phony || Shaders cmake_object_order_depends_target_SDL2 cmake_object_order_depends_target_fastgltf cmake_object_order_depends_target_fastgltf_simdjson cmake_object_order_depends_target_fmt cmake_object_order_depends_target_imgui cmake_object_order_depends_target_vkbootstrap
 
 build src\CMakeFiles\engine.dir\cmake_pch.cxx.obj: CXX_COMPILER__engine_unscanned_Debug D$:\Github\vulkan-guide-starting-point-2\out\build\x64-Debug\src\CMakeFiles\engine.dir\cmake_pch.cxx | src\CMakeFiles\engine.dir\cmake_pch.hxx || cmake_object_order_depends_target_engine
   DEFINES = -DFASTGLTF_DISABLE_CUSTOM_MEMORY_POOL=0 -DFASTGLTF_ENABLE_DEPRECATED_EXT=0 -DFASTGLTF_USE_64BIT_FLOAT=0 -DFASTGLTF_USE_CUSTOM_SMALLVECTOR=0 -DGLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -5147,7 +5156,7 @@ build src\CMakeFiles\engine.dir\camera.cpp.obj: CXX_COMPILER__engine_unscanned_D
 #############################################
 # Link the executable D:\Github\vulkan-guide-starting-point-2\bin\engine.exe
 
-build D$:\Github\vulkan-guide-starting-point-2\bin\engine.exe: CXX_EXECUTABLE_LINKER__engine_Debug src\CMakeFiles\engine.dir\cmake_pch.cxx.obj src\CMakeFiles\engine.dir\main.cpp.obj src\CMakeFiles\engine.dir\vk_initializers.cpp.obj src\CMakeFiles\engine.dir\vk_images.cpp.obj src\CMakeFiles\engine.dir\vk_descriptors.cpp.obj src\CMakeFiles\engine.dir\vk_pipelines.cpp.obj src\CMakeFiles\engine.dir\vk_engine.cpp.obj src\CMakeFiles\engine.dir\vk_loader.cpp.obj src\CMakeFiles\engine.dir\camera.cpp.obj | C$:\VulkanSDK\1.4.350.0\Lib\vulkan-1.lib third_party\fmt\fmtd.lib third_party\vkbootstrap.lib third_party\imgui.lib third_party\fastgltf\fastgltf.lib C$:\VulkanSDK\1.4.350.0\Lib\vulkan-1.lib third_party\SDL\SDL2d.lib third_party\fastgltf\fastgltf_simdjson.lib || third_party\SDL\SDL2d.dll third_party\fastgltf\fastgltf.lib third_party\fastgltf\fastgltf_simdjson.lib third_party\fmt\fmtd.lib third_party\imgui.lib third_party\vkbootstrap.lib
+build D$:\Github\vulkan-guide-starting-point-2\bin\engine.exe: CXX_EXECUTABLE_LINKER__engine_Debug src\CMakeFiles\engine.dir\cmake_pch.cxx.obj src\CMakeFiles\engine.dir\main.cpp.obj src\CMakeFiles\engine.dir\vk_initializers.cpp.obj src\CMakeFiles\engine.dir\vk_images.cpp.obj src\CMakeFiles\engine.dir\vk_descriptors.cpp.obj src\CMakeFiles\engine.dir\vk_pipelines.cpp.obj src\CMakeFiles\engine.dir\vk_engine.cpp.obj src\CMakeFiles\engine.dir\vk_loader.cpp.obj src\CMakeFiles\engine.dir\camera.cpp.obj | C$:\VulkanSDK\1.4.350.0\Lib\vulkan-1.lib third_party\fmt\fmtd.lib third_party\vkbootstrap.lib third_party\imgui.lib third_party\fastgltf\fastgltf.lib C$:\VulkanSDK\1.4.350.0\Lib\vulkan-1.lib third_party\SDL\SDL2d.lib third_party\fastgltf\fastgltf_simdjson.lib || Shaders third_party\SDL\SDL2d.dll third_party\fastgltf\fastgltf.lib third_party\fastgltf\fastgltf_simdjson.lib third_party\fmt\fmtd.lib third_party\imgui.lib third_party\vkbootstrap.lib
   FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
   LINK_FLAGS = /machine:x64 /debug /INCREMENTAL /subsystem:console
   LINK_LIBRARIES = C:\VulkanSDK\1.4.350.0\Lib\vulkan-1.lib  third_party\fmt\fmtd.lib  third_party\vkbootstrap.lib  third_party\imgui.lib  third_party\fastgltf\fastgltf.lib  C:\VulkanSDK\1.4.350.0\Lib\vulkan-1.lib  third_party\SDL\SDL2d.lib  third_party\fastgltf\fastgltf_simdjson.lib  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
